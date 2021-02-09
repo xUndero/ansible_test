@@ -1,0 +1,50 @@
+---
+- name: Prepare nginx
+  hosts: nginx
+  become: true
+  tasks:
+    - name: Add an Apt signing keys
+      apt_key:
+        url: "{{ item }}"
+        state: present
+      with_items:
+        - https://nginx.org/keys/nginx_signing.key
+
+    - name: Add repositories into sources list
+      apt_repository:
+        repo: "{{ item }}"
+        state: present
+      with_items:
+        - 'deb http://nginx.org/packages/ubuntu {{ ansible_distribution_release }} nginx'
+
+    - name: Update repositories cache and install packages
+      apt:
+        name: "{{ item }}"
+        update_cache: yes
+      with_items:
+        - wget
+        - zsh
+        - nginx
+      notify:
+        - nginx_start
+
+    - name: Copy file
+      copy:
+        src: "{{ playbook_dir }}/../files/index.html"
+        dest: /var/www/
+
+    - name: Set fs.file-max
+      sysctl:
+        name: fs.file-max
+        value: "1204000"
+        sysctl_set: yes
+
+    - name: Set somaxconn
+      sysctl:
+        name: net.core.somaxconn
+        value: "65535"
+        sysctl_set: yes
+
+  handlers:
+    - name: nginx_start
+      service: name=nginx state=started
