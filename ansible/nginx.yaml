@@ -28,10 +28,18 @@
       notify:
         - nginx_start
 
-    - name: Copy file
+    - name: Copy config file
       copy:
-        src: "{{ playbook_dir }}/../files/index.html"
+        src: "{{ playbook_dir }}/../files/default.conf"
+        dest: /etc/nginx/conf.d/
+        backup: yes
+
+    - name: Download index.html
+      get_url:
+        url: https://raw.githubusercontent.com/xUndero/ansible_test/master/files/index.html
         dest: /var/www/
+      notify:
+        - nginx_restart
 
     - name: Set fs.file-max
       sysctl:
@@ -45,6 +53,19 @@
         value: "65535"
         sysctl_set: yes
 
+    - name: Set up multiple authorized keys
+      authorized_key:
+        user: root
+        state: present
+        key: '{{ item }}'
+      with_file:
+        - "/home/user1/.ssh/id_rsa.pub"
+        - "/home/user2/.ssh/id_rsa.pub"
+      ignore_errors: yes
+
   handlers:
     - name: nginx_start
       service: name=nginx state=started
+
+    - name: nginx_restart
+      service: name=nginx state=restarted
