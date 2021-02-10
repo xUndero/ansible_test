@@ -25,8 +25,6 @@
         - wget
         - zsh
         - nginx
-      notify:
-        - nginx_start
 
     - name: Copy config file
       copy:
@@ -34,8 +32,13 @@
         dest: /etc/nginx/conf.d/
         backup: yes
 
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: /var/www
+        state: directory
+
     - name: Download index.html
-      get_url:
+      ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/xUndero/ansible_test/master/files/index.html
         dest: /var/www/
       notify:
@@ -64,8 +67,5 @@
       ignore_errors: yes
 
   handlers:
-    - name: nginx_start
-      service: name=nginx state=started
-
     - name: nginx_restart
       service: name=nginx state=restarted
